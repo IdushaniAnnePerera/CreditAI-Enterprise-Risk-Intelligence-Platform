@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CreditAI — Enterprise Risk Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg0:#0a0b0e;--bg1:#111318;--bg2:#181b22;--bg3:#1e2229;--bg4:#252b35;
+  --border:#2a3040;--border2:#363f52;
+  --text1:#f0f4ff;--text2:#8892a4;--text3:#505a6e;
+  --blue:#3d82e4;--blue-dim:#1e3a5f;--blue-glow:#3d82e420;
+  --green:#22c55e;--green-dim:#14532d;--green-glow:#22c55e20;
+  --red:#ef4444;--red-dim:#7f1d1d;--red-glow:#ef444420;
+  --amber:#f59e0b;--amber-dim:#78350f;--amber-glow:#f59e0b20;
+  --purple:#8b7cf6;--purple-dim:#3b1f8c;
+  --teal:#14b8a6;
+  --radius:8px;--radius-lg:12px;--radius-xl:16px;
+  --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg0);color:var(--text1);font-family:var(--font);font-size:14px;line-height:1.5;overflow:hidden}
+
+/* ── Layout ── */
+.shell{display:flex;height:100vh}
+.sidebar{width:230px;flex-shrink:0;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:56px;background:var(--bg1);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:24px;background:var(--bg0)}
+.content::-webkit-scrollbar{width:6px}.content::-webkit-scrollbar-track{background:transparent}.content::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ── Sidebar ── */
+.logo-area{padding:20px 18px 18px;border-bottom:1px solid var(--border)}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px}
+.logo-icon svg{width:18px;height:18px;fill:#fff}
+.logo-name{font-size:14px;font-weight:600;color:var(--text1);letter-spacing:-.01em}
+.logo-tagline{font-size:11px;color:var(--text3);margin-top:2px}
+.nav-group{padding:16px 10px 8px}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;padding:0 8px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);cursor:pointer;color:var(--text2);font-size:13px;font-weight:400;margin-bottom:2px;transition:all .15s;position:relative}
+.nav-item:hover{background:var(--bg3);color:var(--text1)}
+.nav-item.active{background:var(--blue-glow);color:var(--blue);font-weight:500}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--blue);border-radius:0 2px 2px 0}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-left:auto;background:var(--blue-dim);color:var(--blue);font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.sidebar-bottom{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border)}
+.status-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex-shrink:0}
+
+/* ── Topbar ── */
+.page-title{font-size:15px;font-weight:600;color:var(--text1)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.tb-badge{font-size:11px;font-weight:500;padding:4px 10px;border-radius:var(--radius)}
+.badge-live{background:var(--green-glow);color:var(--green);border:1px solid var(--green-dim)}
+.badge-info{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.tb-icon-btn{width:32px;height:32px;border-radius:var(--radius);background:var(--bg3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text2)}
+.tb-icon-btn:hover{background:var(--bg4);color:var(--text1)}
+
+/* ── Panels ── */
+.panel{display:none}.panel.active{display:block}
+
+/* ── KPI Cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.blue::before{background:linear-gradient(90deg,var(--blue),transparent)}
+.kpi.green::before{background:linear-gradient(90deg,var(--green),transparent)}
+.kpi.red::before{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi.amber::before{background:linear-gradient(90deg,var(--amber),transparent)}
+.kpi.purple::before{background:linear-gradient(90deg,var(--purple),transparent)}
+.kpi-label{font-size:11px;color:var(--text3);font-weight:500;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px}
+.kpi-value{font-size:26px;font-weight:600;color:var(--text1);line-height:1;letter-spacing:-.02em}
+.kpi-delta{font-size:11px;margin-top:6px;display:flex;align-items:center;gap:4px}
+.delta-up{color:var(--green)}.delta-dn{color:var(--red)}.delta-neu{color:var(--text3)}
+.kpi-icon{position:absolute;right:16px;top:16px;opacity:.12;font-size:32px}
+
+/* ── Cards ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:14px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--text1)}
+.card-sub{font-size:11px;color:var(--text3)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-60-40{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+
+/* ── Table ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{font-size:10px;font-weight:600;letter-spacing:.06em;color:var(--text3);text-transform:uppercase;padding:10px 12px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+.data-table td{padding:12px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:var(--bg3)}
+.mono{font-family:var(--mono);font-size:11px}
+
+/* ── Chips / Badges ── */
+.chip{display:inline-flex;align-items:center;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;letter-spacing:.03em}
+.chip-approve{background:var(--green-glow);color:var(--green);border:1px solid var(--green-dim)}
+.chip-decline{background:var(--red-glow);color:var(--red);border:1px solid var(--red-dim)}
+.chip-review{background:var(--amber-glow);color:var(--amber);border:1px solid var(--amber-dim)}
+.chip-info{background:var(--blue-glow);color:var(--blue);border:1px solid var(--blue-dim)}
+.chip-neutral{background:var(--bg4);color:var(--text2);border:1px solid var(--border)}
+
+/* ── Progress bars ── */
+.bar-track{flex:1;height:5px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.feat-row{display:flex;align-items:center;gap:10px;padding:5px 0}
+.feat-label{font-size:12px;color:var(--text2);width:180px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feat-val{font-size:11px;color:var(--text3);width:40px;text-align:right;flex-shrink:0}
+.mbar-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.mbar-row:last-child{border-bottom:none}
+.mbar-name{font-size:12px;color:var(--text2);width:140px;flex-shrink:0}
+.mbar-val{font-size:12px;font-weight:600;width:45px;text-align:right;flex-shrink:0}
+
+/* ── Form ── */
+.form-section{max-width:900px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
+.form-input,.form-select{height:38px;padding:0 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);font-size:13px;color:var(--text1);font-family:var(--font);transition:border .15s;outline:none;width:100%}
+.form-input:focus,.form-select:focus{border-color:var(--blue);background:var(--bg4)}
+.form-select option{background:var(--bg3)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:var(--font)}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:#2d6fd4}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-outline:hover{background:var(--bg3);color:var(--text1)}
+.btn-danger{background:var(--red-glow);color:var(--red);border:1px solid var(--red-dim)}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Decision result ── */
+.decision-card{border-radius:var(--radius-lg);padding:24px;border:1px solid var(--border);margin-top:20px;background:var(--bg2)}
+.decision-status{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.status-approved{color:var(--green)}.status-declined{color:var(--red)}.status-conditional{color:var(--amber)}.status-review{color:var(--blue)}
+.decision-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px}
+.dg-cell{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.dg-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.dg-val{font-size:18px;font-weight:600;color:var(--text1)}
+.component-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.comp-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.comp-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.comp-stat{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0}
+.comp-stat-label{color:var(--text2)}.comp-stat-val{font-weight:600;color:var(--text1)}
+.risk-factors{margin-top:14px}
+.rf-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--red-glow);border:1px solid var(--red-dim);border-radius:var(--radius);margin-bottom:6px;font-size:12px;color:var(--red)}
+.next-steps{margin-top:14px}
+.ns-item{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border)}
+.ns-item:last-child{border-bottom:none}
+.ns-num{width:20px;height:20px;border-radius:50%;background:var(--blue-glow);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+
+/* ── Sentiment ── */
+.headline-input{width:100%;min-height:100px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);color:var(--text1);font-family:var(--font);font-size:13px;resize:vertical;outline:none;line-height:1.5}
+.headline-input:focus{border-color:var(--blue)}
+.sent-result{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-top:14px;display:none}
+.sent-bars{display:flex;gap:12px;margin-top:14px}
+.sent-bar-col{flex:1}
+.sent-bar-label{font-size:11px;font-weight:600;margin-bottom:5px}
+.sent-bar-track{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden}
+.sent-bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* ── Fraud ── */
+.alert-card{padding:14px;border-radius:var(--radius);margin-bottom:10px;border}
+.alert-high{background:var(--red-glow);border-color:var(--red-dim)}
+.alert-med{background:var(--amber-glow);border-color:var(--amber-dim)}
+.alert-low{background:var(--green-glow);border-color:var(--green-dim)}
+.pipeline-step{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border)}
+.pipeline-step:last-child{border-bottom:none}
+.step-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.step-content{flex:1}
+.step-title{font-size:13px;font-weight:500;color:var(--text1);margin-bottom:3px}
+.step-desc{font-size:12px;color:var(--text2)}
+
+/* ── Gauge ── */
+.gauge-container{display:flex;flex-direction:column;align-items:center;padding:10px}
+.gauge-svg{width:180px;height:100px}
+.gauge-value{font-size:30px;font-weight:700;text-anchor:middle;font-family:'Inter',sans-serif}
+.gauge-label{font-size:11px;text-anchor:middle;fill:var(--text3);font-family:'Inter',sans-serif}
+
+/* ── Misc ── */
+.divider{height:1px;background:var(--border);margin:16px 0}
+.empty-state{text-align:center;padding:40px;color:var(--text3)}
+.tag{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg4);color:var(--text2);border:1px solid var(--border)}
+.loading-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.loading-overlay.show{display:flex}
+.loading-text{color:var(--text2);font-size:13px}
+.tooltip{position:relative}
+.tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg4);color:var(--text1);font-size:11px;padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border);white-space:nowrap;z-index:50}
+
+/* ── Scrollable table wrapper ── */
+.table-wrap{overflow-x:auto}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner" style="width:28px;height:28px;border-width:3px;color:var(--blue)"></div>
+  <div class="loading-text" id="loadingText">Processing…</div>
+</div>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo-area">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="logo-name">CreditAI Platform</div>
+      <div class="logo-tagline">Enterprise Risk Intelligence</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Analytics</div>
+      <div class="nav-item active" onclick="nav('dashboard',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5" opacity=".5"/><rect x="1" y="9" width="6" height="6" rx="1.5" opacity=".5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+        Portfolio Dashboard
+      </div>
+      <div class="nav-item" onclick="nav('models',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="8" cy="8" r="6"/><path d="M5 8h6M8 5v6"/></svg>
+        Model Performance
+      </div>
+      <div class="nav-item" onclick="nav('sentiment',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M2 12l4-5 3 2.5L13 4"/></svg>
+        News Sentiment
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Operations</div>
+      <div class="nav-item" onclick="nav('apply',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8h6M8 5v6"/></svg>
+        New Application
+        <span class="nav-badge">AI</span>
+      </div>
+      <div class="nav-item" onclick="nav('fraud',this)">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M8 2l1.5 4h4l-3.3 2.4 1.3 4L8 10l-3.5 2.4 1.3-4L2.5 6h4z"/></svg>
+        Fraud Monitor
+      </div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="status-row">
+        <div class="status-dot"></div>
+        All systems operational
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px">3 models loaded · v2.0.0</div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="pageTitle">Portfolio Dashboard</div>
+      <div class="topbar-right">
+        <span class="tb-badge badge-live">● Live</span>
+        <span class="tb-badge badge-info" id="dateDisplay"></span>
+        <div class="tb-icon-btn tooltip" data-tip="Refresh data" onclick="loadDashboard()">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 8A6 6 0 1 1 8 2M14 2v4h-4"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="kpi blue"><div class="kpi-label">Total Applications</div><div class="kpi-value" id="kpi-apps">—</div><div class="kpi-delta delta-up" id="kpi-apps-d">Loading…</div></div>
+          <div class="kpi green"><div class="kpi-label">Total Exposure</div><div class="kpi-value" id="kpi-exp">—</div><div class="kpi-delta delta-up" id="kpi-exp-d">Loading…</div></div>
+          <div class="kpi purple"><div class="kpi-label">Avg Credit Score</div><div class="kpi-value" id="kpi-cs">—</div><div class="kpi-delta delta-up">Portfolio average</div></div>
+          <div class="kpi amber"><div class="kpi-label">Default Rate</div><div class="kpi-value" id="kpi-dr">—</div><div class="kpi-delta delta-dn">Synthetic dataset</div></div>
+        </div>
+
+        <div class="grid-60-40" style="margin-bottom:14px">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Monthly Application Volume</div><div class="card-sub">Last 12 months</div></div>
+            <div style="position:relative;height:200px"><canvas id="chartVol"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Risk Tier Distribution</div></div>
+            <div style="display:flex;gap:18px;align-items:center">
+              <div style="position:relative;width:130px;height:130px;flex-shrink:0"><canvas id="chartTier"></canvas></div>
+              <div id="tierLegend" style="display:flex;flex-direction:column;gap:7px;font-size:12px"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid3" style="margin-bottom:14px">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Risk Distribution</div></div>
+            <div style="position:relative;height:150px"><canvas id="chartRisk"></canvas></div>
+          </div>
+          <div class="card" style="grid-column:span 2">
+            <div class="card-head"><div class="card-title">Applications by Industry</div></div>
+            <div style="position:relative;height:150px"><canvas id="chartIndustry"></canvas></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Recent Applications</div><div class="card-sub" id="recentSub">Loading…</div></div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>App ID</th><th>Company</th><th>Industry</th><th>Loan Amount</th>
+                <th>Credit Score</th><th>Risk Tier</th><th>Decision</th><th>Default Prob.</th>
+              </tr></thead>
+              <tbody id="appTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODEL PERFORMANCE -->
+      <div class="panel" id="panel-models">
+        <div class="kpi-grid">
+          <div class="kpi blue"><div class="kpi-label">Ensemble ROC-AUC</div><div class="kpi-value">0.782</div><div class="kpi-delta delta-up">XGB + RF + GBM</div></div>
+          <div class="kpi green"><div class="kpi-label">F1 Score</div><div class="kpi-value">0.763</div><div class="kpi-delta delta-up">Macro average</div></div>
+          <div class="kpi amber"><div class="kpi-label">Avg Precision</div><div class="kpi-value">0.852</div><div class="kpi-delta delta-up">PR-AUC</div></div>
+          <div class="kpi purple"><div class="kpi-label">NLP Accuracy</div><div class="kpi-value">100%</div><div class="kpi-delta delta-up">TF-IDF + LogReg</div></div>
+        </div>
+
+        <div class="grid-60-40" style="margin-bottom:14px">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Model AUC Comparison</div></div>
+            <div id="modelBars"></div>
+            <div style="position:relative;height:170px;margin-top:18px"><canvas id="chartROC"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Feature Importance (XGBoost)</div></div>
+            <div id="featureList"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Model Architecture</div></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;border-top:2px solid var(--blue)">
+              <div style="font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px">XGBoost</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.8">300 estimators<br>Max depth: 6<br>Learning rate: 0.05<br>Subsample: 0.8<br>Scale pos weight: auto</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;border-top:2px solid var(--purple)">
+              <div style="font-size:12px;font-weight:600;color:var(--purple);margin-bottom:10px">Random Forest</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.8">200 estimators<br>Max depth: 12<br>Min samples leaf: 5<br>Max features: sqrt<br>Class balanced</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;border-top:2px solid var(--green)">
+              <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:10px">Gradient Boosting</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.8">150 estimators<br>Max depth: 5<br>Learning rate: 0.08<br>Subsample: 0.8<br>Min leaf: 10</div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px;border-top:2px solid var(--amber)">
+              <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:10px">NLP Engine</div>
+              <div style="font-size:11px;color:var(--text2);line-height:1.8">TF-IDF 1–3 grams<br>15k features<br>Logistic Regression<br>Financial lexicon<br>5-fold CV</div>
+            </div>
+          </div>
+          <div class="divider"></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+              <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Decision Weights</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.9">Credit ML Ensemble: <span style="color:var(--blue);font-weight:600">55%</span><br>Fraud Detection: <span style="color:var(--red);font-weight:600">25%</span><br>News Sentiment: <span style="color:var(--amber);font-weight:600">20%</span></div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+              <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Training Data</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.9">Applications: <span style="color:var(--text1);font-weight:600">5,000</span><br>Features engineered: <span style="color:var(--text1);font-weight:600">23</span><br>NLP headlines: <span style="color:var(--text1);font-weight:600">500</span></div>
+            </div>
+            <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+              <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Interest Rate Schedule</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.9">AAA: 4.5% &nbsp; AA: 5.0% &nbsp; A: 5.75%<br>BBB: 7.0% &nbsp; BB: 9.5% &nbsp; B: 13.0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SENTIMENT -->
+      <div class="panel" id="panel-sentiment">
+        <div class="kpi-grid">
+          <div class="kpi green"><div class="kpi-label">Training Headlines</div><div class="kpi-value">500</div><div class="kpi-delta delta-up">Corpus size</div></div>
+          <div class="kpi green"><div class="kpi-label">Positive</div><div class="kpi-value">41.6%</div><div class="kpi-delta delta-up">208 articles</div></div>
+          <div class="kpi red"><div class="kpi-label">Negative</div><div class="kpi-value">28.8%</div><div class="kpi-delta delta-dn">144 articles</div></div>
+          <div class="kpi blue"><div class="kpi-label">NLP F1 Score</div><div class="kpi-value">1.000</div><div class="kpi-delta delta-up">3-class macro</div></div>
+        </div>
+
+        <div class="grid-60-40">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Live Sentiment Analyzer</div><div class="card-sub">Powered by TF-IDF + Financial Lexicon</div></div>
+            <textarea class="headline-input" id="newsInput" placeholder="Paste one or more financial headlines (one per line)…&#10;&#10;Example:&#10;Acme Corp reports record quarterly earnings, beating analyst expectations by 28%&#10;Acme Corp faces liquidity concerns as debt levels surge"></textarea>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <button class="btn btn-primary" onclick="runSentiment()">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 8h12M10 4l4 4-4 4"/></svg>
+                Analyze Headlines
+              </button>
+              <button class="btn btn-outline" onclick="fillSampleHeadlines()">Load Sample</button>
+            </div>
+            <div class="sent-result" id="sentResult">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div id="sentOverall" style="font-size:16px;font-weight:600"></div>
+                <div id="sentAdjust" style="font-size:12px;color:var(--text2)"></div>
+              </div>
+              <div class="sent-bars" id="sentBarsEl"></div>
+              <div id="sentIndividual" style="margin-top:14px"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Sentiment Breakdown</div></div>
+            <div style="position:relative;height:180px"><canvas id="chartSent"></canvas></div>
+            <div style="display:flex;justify-content:center;gap:20px;margin-top:12px;font-size:12px">
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:#22c55e;border-radius:2px;display:inline-block"></span><span style="color:var(--text2)">Positive 41.6%</span></span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:#3d82e4;border-radius:2px;display:inline-block"></span><span style="color:var(--text2)">Neutral 29.6%</span></span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;background:#ef4444;border-radius:2px;display:inline-block"></span><span style="color:var(--text2)">Negative 28.8%</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW APPLICATION -->
+      <div class="panel" id="panel-apply">
+        <div class="form-section">
+          <div class="card">
+            <div class="card-head">
+              <div><div class="card-title">Credit Application Assessment</div><div class="card-sub" style="margin-top:3px">AI-powered instant credit decision using 3 ML models</div></div>
+              <button class="btn btn-outline" onclick="fillSampleApp('good')">Load Good Sample</button>
+            </div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Company Name</label><input class="form-input" id="f_company" value="Nexus Technologies Ltd"/></div>
+              <div class="form-group"><label class="form-label">Industry</label>
+                <select class="form-select" id="f_industry">
+                  <option>Technology</option><option>Healthcare</option><option>Finance</option><option>Retail</option><option>Manufacturing</option><option>Real Estate</option><option>Energy</option><option>Transportation</option><option>Agriculture</option><option>Media</option>
+                </select>
+              </div>
+              <div class="form-group"><label class="form-label">Loan Purpose</label>
+                <select class="form-select" id="f_purpose">
+                  <option>Business Expansion</option><option>Working Capital</option><option>Equipment Purchase</option><option>Real Estate</option><option>Debt Consolidation</option><option>Research &amp; Development</option>
+                </select>
+              </div>
+              <div class="form-group"><label class="form-label">Annual Revenue ($)</label><input class="form-input" id="f_revenue" type="number" value="3200000"/></div>
+              <div class="form-group"><label class="form-label">Loan Amount Requested ($)</label><input class="form-input" id="f_loan" type="number" value="600000"/></div>
+              <div class="form-group"><label class="form-label">Monthly Cash Flow ($)</label><input class="form-input" id="f_cashflow" type="number" value="55000"/></div>
+              <div class="form-group"><label class="form-label">Credit Score (300–850)</label><input class="form-input" id="f_credit" type="number" value="715"/></div>
+              <div class="form-group"><label class="form-label">Years in Business</label><input class="form-input" id="f_years" type="number" value="6"/></div>
+              <div class="form-group"><label class="form-label">Number of Employees</label><input class="form-input" id="f_employees" type="number" value="80"/></div>
+              <div class="form-group"><label class="form-label">Debt-to-Income Ratio</label><input class="form-input" id="f_dti" type="number" step="0.01" value="0.32"/></div>
+              <div class="form-group"><label class="form-label">Existing Loans</label><input class="form-input" id="f_loans" type="number" value="1"/></div>
+              <div class="form-group"><label class="form-label">Late Payments (12m)</label><input class="form-input" id="f_late" type="number" value="0"/></div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <button class="btn btn-primary" id="submitBtn" onclick="submitApplication()">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8l6 6 6-6"/></svg>
+                Run AI Credit Decision
+              </button>
+              <button class="btn btn-outline" onclick="fillSampleApp('bad')">Load High-Risk Sample</button>
+              <div style="font-size:11px;color:var(--text3);margin-left:auto">Weights: Credit ML 55% · Fraud 25% · Sentiment 20%</div>
+            </div>
+          </div>
+          <div id="decisionOutput"></div>
+        </div>
+      </div>
+
+      <!-- FRAUD MONITOR -->
+      <div class="panel" id="panel-fraud">
+        <div class="kpi-grid">
+          <div class="kpi blue"><div class="kpi-label">Sequences Monitored</div><div class="kpi-value">200</div><div class="kpi-delta">90-day windows</div></div>
+          <div class="kpi red"><div class="kpi-label">Suspicious Cases</div><div class="kpi-value">17</div><div class="kpi-delta delta-dn">8.5% of corpus</div></div>
+          <div class="kpi purple"><div class="kpi-label">Detection Method</div><div class="kpi-value" style="font-size:16px;margin-top:4px">Isolation Forest</div><div class="kpi-delta">+ Rule Engine</div></div>
+          <div class="kpi amber"><div class="kpi-label">Model Contamination</div><div class="kpi-value">5%</div><div class="kpi-delta">Hyperparameter</div></div>
+        </div>
+
+        <div class="grid-60-40">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Fraud Detection Pipeline</div></div>
+            <div id="fraudPipeline"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">Simulate Detection</div></div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div class="form-group"><label class="form-label">Company ID</label><input class="form-input" id="fd_company" value="COMP-0042"/></div>
+              <div class="form-group"><label class="form-label">Risk Scenario</label>
+                <select class="form-select" id="fd_risk">
+                  <option value="low">Low Risk — Normal activity</option>
+                  <option value="medium">Medium Risk — Transaction spike</option>
+                  <option value="high">High Risk — Revenue collapse</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="runFraudSim()">Run Simulation</button>
+              <div id="fraudResult" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">Active Fraud Alerts</div><div class="card-sub">Sorted by risk probability</div></div>
+          <div id="fraudAlerts"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+const API = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : '';
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt = (n,d=0) => n?.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) ?? '—';
+const fmtDollar = n => n >= 1e9 ? `$${(n/1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n/1e6).toFixed(1)}M` : `$${fmt(n)}`;
+const fmtPct = n => `${(n*100).toFixed(1)}%`;
+
+function showLoading(msg='Processing…'){$('loadingOverlay').classList.add('show');$('loadingText').textContent=msg}
+function hideLoading(){$('loadingOverlay').classList.remove('show')}
+
+async function apiFetch(path, opts={}){
+  const r = await fetch(API+path, opts);
+  if(!r.ok) throw new Error(`${r.status} ${await r.text()}`);
+  return r.json();
+}
+
+const CHARTS = {};
+function mkChart(id, cfg){
+  if(CHARTS[id]) CHARTS[id].destroy();
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  CHARTS[id] = new Chart(ctx, cfg);
+}
+
+// ── Date ──────────────────────────────────────────────────────────────────────
+$('dateDisplay').textContent = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+const PAGE_TITLES = {dashboard:'Portfolio Dashboard',models:'Model Performance',sentiment:'News Sentiment',apply:'New Application',fraud:'Fraud Monitor'};
+function nav(id, el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  $(f`panel-${id}`).classList.add('active');
+  el.classList.add('active');
+  $('pageTitle').textContent = PAGE_TITLES[id];
+  if(id==='dashboard') loadDashboard();
+  if(id==='models') loadModels();
+  if(id==='fraud') loadFraud();
+  if(id==='sentiment') buildSentimentChart();
+}
+const f = (s,...v) => String.raw({raw:s},...v);
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+async function loadDashboard(){
+  try{
+    const [summary, tiers, monthly, industries, riskDist, recent] = await Promise.all([
+      apiFetch('/api/portfolio/summary'),
+      apiFetch('/api/portfolio/risk-tiers'),
+      apiFetch('/api/portfolio/monthly-volume'),
+      apiFetch('/api/portfolio/industries'),
+      apiFetch('/api/portfolio/risk-distribution'),
+      apiFetch('/api/portfolio/recent-applications?limit=10'),
+    ]);
+
+    $('kpi-apps').textContent = fmt(summary.total_applications);
+    $('kpi-apps-d').textContent = `${fmt(summary.approved)} approved · ${fmt(summary.declined)} declined`;
+    $('kpi-exp').textContent = fmtDollar(summary.total_exposure);
+    $('kpi-exp-d').textContent = `Avg loan: ${fmtDollar(summary.avg_loan)}`;
+    $('kpi-cs').textContent = summary.avg_credit_score.toFixed(1);
+    $('kpi-dr').textContent = fmtPct(summary.default_rate);
+
+    // Monthly volume chart
+    mkChart('chartVol',{type:'bar',data:{
+      labels: monthly.map(m=>m.month),
+      datasets:[{data:monthly.map(m=>m.count),backgroundColor:'#3d82e418',borderColor:'#3d82e4',borderWidth:1.5,borderRadius:4,borderSkipped:false}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y} apps`}}},scales:{x:{grid:{display:false},ticks:{color:'#505a6e',font:{size:10}}},y:{grid:{color:'#2a304020'},ticks:{color:'#505a6e',font:{size:10}}}}}});
+
+    // Risk tier donut
+    const tierColors={'AAA':'#22c55e','AA':'#3d82e4','A':'#8b7cf6','BBB':'#f59e0b','BB':'#f97316','B':'#ef4444'};
+    const tierKeys = Object.keys(tiers);
+    mkChart('chartTier',{type:'doughnut',data:{
+      labels:tierKeys,datasets:[{data:tierKeys.map(k=>tiers[k]),backgroundColor:tierKeys.map(k=>tierColors[k]+'40'),borderColor:tierKeys.map(k=>tierColors[k]),borderWidth:1.5}]
+    },options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed}`}}}}});
+    $('tierLegend').innerHTML = tierKeys.map(k=>`<div style="display:flex;align-items:center;gap:7px"><span style="width:9px;height:9px;border-radius:2px;background:${tierColors[k]};flex-shrink:0"></span><span style="color:var(--text2)">${k} — ${fmt(tiers[k])}</span></div>`).join('');
+
+    // Risk distribution
+    mkChart('chartRisk',{type:'bar',data:{
+      labels:['Low Risk','Med Risk','High Risk'],
+      datasets:[{data:[riskDist.low,riskDist.medium,riskDist.high],backgroundColor:['#22c55e22','#f59e0b22','#ef444422'],borderColor:['#22c55e','#f59e0b','#ef4444'],borderWidth:1.5,borderRadius:6,borderSkipped:false}]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#505a6e',font:{size:10}}},y:{grid:{color:'#2a304020'},ticks:{color:'#505a6e',font:{size:10}}}}}});
+
+    // Industry chart
+    const sortedInd = industries.sort((a,b)=>b.count-a.count).slice(0,8);
+    mkChart('chartIndustry',{type:'bar',data:{
+      labels:sortedInd.map(i=>i.industry),
+      datasets:[{data:sortedInd.map(i=>i.count),backgroundColor:'#8b7cf618',borderColor:'#8b7cf6',borderWidth:1.5,borderRadius:4,borderSkipped:false}]
+    },options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'#2a304020'},ticks:{color:'#505a6e',font:{size:10}}},y:{grid:{display:false},ticks:{color:'#8892a4',font:{size:10}}}}}});
+
+    // Recent applications table
+    $('recentSub').textContent = `${recent.length} applications`;
+    const decisionClass = d => d==='APPROVE'?'chip-approve':d==='DECLINE'?'chip-decline':'chip-review';
+    const tierClass = t => ({'AAA':'chip-approve','AA':'chip-approve','A':'chip-info','BBB':'chip-review','BB':'chip-decline','B':'chip-decline'}[t]||'chip-neutral');
+    $('appTable').innerHTML = recent.map(r=>`
+      <tr>
+        <td class="mono" style="color:var(--text3)">${r.application_id}</td>
+        <td style="color:var(--text1);font-weight:500">${r.company_name}</td>
+        <td>${r.industry}</td>
+        <td style="font-family:var(--mono);font-size:11px">${fmtDollar(r.loan_amount)}</td>
+        <td style="font-weight:500">${r.credit_score}</td>
+        <td><span class="chip ${tierClass(r.risk_tier)}">${r.risk_tier}</span></td>
+        <td><span class="chip ${decisionClass(r.decision)}">${r.decision}</span></td>
+        <td style="font-weight:600;color:${r.default_probability<25?'var(--green)':r.default_probability<50?'var(--amber)':'var(--red)'}">${r.default_probability}%</td>
+      </tr>`).join('');
+  }catch(e){console.error(e)}
+}
+
+// ── MODELS ────────────────────────────────────────────────────────────────────
+async function loadModels(){
+  try{
+    const d = await apiFetch('/api/models/performance');
+    const maxAUC = Math.max(...d.models.map(m=>m.auc));
+    $('modelBars').innerHTML = d.models.map(m=>`
+      <div class="mbar-row">
+        <div class="mbar-name">${m.name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(m.auc/maxAUC*100).toFixed(1)}%;background:${m.color}"></div></div>
+        <div class="mbar-val" style="color:${m.color}">${m.auc.toFixed(4)}</div>
+      </div>`).join('');
+
+    const maxFI = Math.max(...d.feature_importance.map(f=>f.importance));
+    $('featureList').innerHTML = d.feature_importance.map(f=>`
+      <div class="feat-row">
+        <div class="feat-label">${f.feature}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(f.importance/maxFI*100).toFixed(1)}%;background:var(--blue)"></div></div>
+        <div class="feat-val">${(f.importance*100).toFixed(1)}%</div>
+      </div>`).join('');
+
+    mkChart('chartROC',{type:'line',data:{
+      labels:['0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1'],
+      datasets:[
+        {label:'Ensemble',data:[0,.13,.28,.44,.58,.70,.80,.87,.93,.97,1],borderColor:'#f59e0b',borderWidth:2,fill:false,tension:.3,pointRadius:0},
+        {label:'Baseline',data:[0,.1,.2,.3,.4,.5,.6,.7,.8,.9,1],borderColor:'#505a6e',borderWidth:1,fill:false,pointRadius:0,borderDash:[4,3]}
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{title:{display:true,text:'False Positive Rate',color:'#505a6e',font:{size:10}},grid:{color:'#2a304020'},ticks:{color:'#505a6e',font:{size:10}}},y:{title:{display:true,text:'True Positive Rate',color:'#505a6e',font:{size:10}},grid:{color:'#2a304020'},ticks:{color:'#505a6e',font:{size:10}}}}}});
+  }catch(e){console.error(e)}
+}
+
+// ── SENTIMENT ─────────────────────────────────────────────────────────────────
+function buildSentimentChart(){
+  mkChart('chartSent',{type:'doughnut',data:{
+    labels:['Positive','Neutral','Negative'],
+    datasets:[{data:[208,148,144],backgroundColor:['#22c55e30','#3d82e430','#ef444430'],borderColor:['#22c55e','#3d82e4','#ef4444'],borderWidth:1.5}]
+  },options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed} headlines`}}}}});
+}
+
+const SENT_POSITIVE_WORDS=['record','beat','exceeded','surpassed','upgraded','growth','expansion','profit','strong','robust','secured funding','raised guidance','outperform','buy rating','overweight'];
+const SENT_NEGATIVE_WORDS=['miss','missed','decline','fell','downgraded','loss','default','bankruptcy','investigation','fraud','layoffs','liquidity concerns','restructuring','covenant breach','insolvency'];
+
+function scoreHeadline(text){
+  const t=text.toLowerCase();
+  let p=0.1,n=0.05;
+  SENT_POSITIVE_WORDS.forEach(w=>{if(t.includes(w))p+=0.12;});
+  SENT_NEGATIVE_WORDS.forEach(w=>{if(t.includes(w))n+=0.15;});
+  p=Math.min(p,.98);n=Math.min(n,.98);
+  const neu=Math.max(0,1-p-n);
+  const tot=p+n+neu;
+  const pn=p/tot,nn=n/tot,nun=neu/tot;
+  const label=pn>nn&&pn>nun?'POSITIVE':nn>pn&&nn>nun?'NEGATIVE':'NEUTRAL';
+  const score=(pn-nn)*0.7+(pn>nn?0.1:-0.1);
+  return{positive:pn,negative:nn,neutral:nun,label,score:Math.max(-1,Math.min(1,score))};
+}
+
+function fillSampleHeadlines(){
+  $('newsInput').value=`Nexus Technologies reports record Q3 earnings, beating analyst expectations by 28%
+Nexus Technologies secures $120M Series D funding round
+Nexus Technologies faces regulatory scrutiny over data practices
+Nexus Technologies credit rating upgraded to AA by major agencies
+Nexus Technologies announces strategic partnership with enterprise client`;
+}
+
+function runSentiment(){
+  const lines=$('newsInput').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){alert('Please enter at least one headline.');return;}
+  const results=lines.map(h=>({headline:h,...scoreHeadline(h)}));
+  const avgScore=results.reduce((s,r)=>s+r.score,0)/results.length;
+  const pos=results.filter(r=>r.label==='POSITIVE').length;
+  const neg=results.filter(r=>r.label==='NEGATIVE').length;
+  const trend=avgScore>0.1?'BULLISH':avgScore<-0.1?'BEARISH':'STABLE';
+  const trendColor=avgScore>0.1?'var(--green)':avgScore<-0.1?'var(--red)':'var(--amber)';
+  const adjBps=Math.round(avgScore*-100);
+  const res=$('sentResult');
+  $('sentOverall').innerHTML=`<span style="color:${trendColor}">${trend}</span> &nbsp;<span style="font-size:13px;color:var(--text2);font-weight:400">— ${lines.length} headlines analyzed</span>`;
+  $('sentAdjust').textContent=`Rate adjustment: ${adjBps>0?'+':''}${adjBps}bps`;
+  $('sentBarsEl').innerHTML=`
+    <div class="sent-bar-col"><div class="sent-bar-label" style="color:var(--green)">Positive (${pos})</div><div class="sent-bar-track"><div class="sent-bar-fill" style="width:${pos/lines.length*100}%;background:var(--green)"></div></div></div>
+    <div class="sent-bar-col"><div class="sent-bar-label" style="color:var(--text3)">Neutral (${lines.length-pos-neg})</div><div class="sent-bar-track"><div class="sent-bar-fill" style="width:${(lines.length-pos-neg)/lines.length*100}%;background:var(--text3)"></div></div></div>
+    <div class="sent-bar-col"><div class="sent-bar-label" style="color:var(--red)">Negative (${neg})</div><div class="sent-bar-track"><div class="sent-bar-fill" style="width:${neg/lines.length*100}%;background:var(--red)"></div></div></div>`;
+  $('sentIndividual').innerHTML=results.map(r=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);font-size:12px">
+      <span class="chip ${r.label==='POSITIVE'?'chip-approve':r.label==='NEGATIVE'?'chip-decline':'chip-neutral'}">${r.label}</span>
+      <span style="color:var(--text2);flex:1">${r.headline}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:${r.score>0?'var(--green)':r.score<0?'var(--red)':'var(--text3)'}">${r.score>0?'+':''}${r.score.toFixed(2)}</span>
+    </div>`).join('');
+  res.style.display='block';
+}
+
+// ── NEW APPLICATION ───────────────────────────────────────────────────────────
+function fillSampleApp(type){
+  if(type==='good'){
+    $('f_company').value='SolidTech Solutions Ltd';$('f_revenue').value=5000000;
+    $('f_loan').value=750000;$('f_credit').value=730;$('f_years').value=8;
+    $('f_dti').value=0.28;$('f_cashflow').value=85000;$('f_late').value=0;$('f_loans').value=1;$('f_employees').value=75;
+  } else {
+    $('f_company').value='RiskyVenture Inc';$('f_revenue').value=180000;
+    $('f_loan').value=500000;$('f_credit').value=520;$('f_years').value=0.8;
+    $('f_dti').value=0.78;$('f_cashflow').value=2000;$('f_late').value=4;$('f_loans').value=4;$('f_employees').value=5;
+  }
+}
+
+async function submitApplication(){
+  const btn=$('submitBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Analyzing…';
+  $('decisionOutput').innerHTML='';
+  try{
+    const payload={
+      company_name:$('f_company').value,
+      industry:$('f_industry').value,
+      loan_purpose:$('f_purpose').value,
+      annual_revenue:+$('f_revenue').value,
+      loan_amount_requested:+$('f_loan').value,
+      years_in_business:+$('f_years').value,
+      num_employees:+$('f_employees').value,
+      credit_score:+$('f_credit').value,
+      debt_to_income_ratio:+$('f_dti').value,
+      monthly_cash_flow:+$('f_cashflow').value,
+      existing_loans:+$('f_loans').value,
+      late_payments_12m:+$('f_late').value,
+      avg_daily_transactions:20,
+      transaction_volatility:0.2,
+      max_overdraft_30d:0
+    };
+    const d=await apiFetch('/api/application/assess',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    renderDecision(d);
+  }catch(e){
+    $('decisionOutput').innerHTML=`<div class="decision-card"><div style="color:var(--red);font-size:13px">⚠️ Error: ${e.message}<br><br><span style="color:var(--text3)">Make sure the backend is running: <code style="background:var(--bg3);padding:2px 6px;border-radius:4px">cd backend && uvicorn main:app --reload</code></span></div></div>`;
+  } finally {
+    btn.disabled=false;btn.innerHTML='<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v12M2 8l6 6 6-6"/></svg> Run AI Credit Decision';
+  }
+}
+
+function renderDecision(d){
+  const statusClass={'APPROVED':'status-approved','DECLINED':'status-declined','CONDITIONAL':'status-conditional','UNDER_REVIEW':'status-review'}[d.status]||'status-review';
+  const statusLabel={'APPROVED':'✓ Approved','DECLINED':'✗ Declined','CONDITIONAL':'⚡ Conditional Approval','UNDER_REVIEW':'◎ Under Review'}[d.status]||d.status;
+  const cm=d.components.credit_ml, fr=d.components.fraud_detection, ns=d.components.news_sentiment;
+  const riskFactors=cm.top_risk_factors||[];
+  const nextSteps=d.next_steps||[];
+  $('decisionOutput').innerHTML=`
+  <div class="decision-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="decision-status ${statusClass}">${statusLabel}</div>
+        <div style="font-size:13px;color:var(--text2);margin-top:4px">${d.company} · ${d.application_id}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--text3)">Composite Risk Score</div>
+        <div style="font-size:28px;font-weight:700;color:${d.composite_risk_score<.25?'var(--green)':d.composite_risk_score<.5?'var(--amber)':'var(--red)'}">${(d.composite_risk_score*100).toFixed(1)}%</div>
+      </div>
+    </div>
+    <div class="decision-grid">
+      <div class="dg-cell"><div class="dg-label">Risk Tier</div><div class="dg-val">${d.risk_tier}</div></div>
+      <div class="dg-cell"><div class="dg-label">Interest Rate</div><div class="dg-val">${d.interest_rate}%</div></div>
+      <div class="dg-cell"><div class="dg-label">Approved Amount</div><div class="dg-val">${fmtDollar(d.approved_amount)}</div></div>
+      <div class="dg-cell"><div class="dg-label">Base Rate</div><div class="dg-val">${d.base_rate}%</div></div>
+    </div>
+    <div class="component-row">
+      <div class="comp-card" style="border-top:2px solid var(--blue)">
+        <div class="comp-title">Credit ML (55% weight)</div>
+        <div class="comp-stat"><span class="comp-stat-label">Default Probability</span><span class="comp-stat-val" style="color:${cm.default_probability<.25?'var(--green)':cm.default_probability<.5?'var(--amber)':'var(--red)'}">${(cm.default_probability*100).toFixed(1)}%</span></div>
+        <div class="comp-stat"><span class="comp-stat-label">Risk Tier</span><span class="comp-stat-val">${cm.risk_tier}</span></div>
+        ${Object.entries(cm.model_predictions||{}).map(([n,v])=>`<div class="comp-stat"><span class="comp-stat-label">${n.replace('_',' ')}</span><span class="comp-stat-val">${(v*100).toFixed(1)}%</span></div>`).join('')}
+      </div>
+      <div class="comp-card" style="border-top:2px solid var(--red)">
+        <div class="comp-title">Fraud Detection (25% weight)</div>
+        <div class="comp-stat"><span class="comp-stat-label">Fraud Probability</span><span class="comp-stat-val" style="color:${fr.fraud_probability<.3?'var(--green)':fr.fraud_probability<.6?'var(--amber)':'var(--red)'}">${(fr.fraud_probability*100).toFixed(1)}%</span></div>
+        <div class="comp-stat"><span class="comp-stat-label">Risk Level</span><span class="comp-stat-val">${fr.risk_level}</span></div>
+        <div class="comp-stat"><span class="comp-stat-label">Suspicious</span><span class="comp-stat-val">${fr.is_suspicious?'YES':'No'}</span></div>
+        ${fr.alerts.map(a=>`<div style="font-size:11px;color:var(--amber);margin-top:6px;padding:5px 8px;background:var(--amber-glow);border-radius:4px">⚠ ${a}</div>`).join('')}
+      </div>
+      <div class="comp-card" style="border-top:2px solid var(--amber)">
+        <div class="comp-title">News Sentiment (20% weight)</div>
+        <div class="comp-stat"><span class="comp-stat-label">Trend</span><span class="comp-stat-val">${ns.sentiment_trend}</span></div>
+        <div class="comp-stat"><span class="comp-stat-label">Rate Adj.</span><span class="comp-stat-val">${ns.credit_adjustment_bps>=0?'+':''}${ns.credit_adjustment_bps}bps</span></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">${ns.note||''}</div>
+      </div>
+    </div>
+    ${riskFactors.length?`<div class="risk-factors"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Risk Factors</div>${riskFactors.map(f=>`<div class="rf-item"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11h0"/></svg>${f}</div>`).join('')}</div>`:''}
+    ${nextSteps.length?`<div class="next-steps"><div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Next Steps</div>${nextSteps.map((s,i)=>`<div class="ns-item"><div class="ns-num">${i+1}</div>${s}</div>`).join('')}</div>`:''}
+    ${d.hard_decline_reasons?.length?`<div style="margin-top:14px;padding:12px;background:var(--red-glow);border:1px solid var(--red-dim);border-radius:var(--radius);font-size:12px;color:var(--red)"><strong>Hard Decline Reasons:</strong><br>${d.hard_decline_reasons.join('<br>')}</div>`:''}
+  </div>`;
+}
+
+// ── FRAUD ─────────────────────────────────────────────────────────────────────
+function loadFraud(){
+  $('fraudPipeline').innerHTML=[
+    {n:1,c:'var(--blue)',title:'Transaction Ingestion',desc:'90-day daily transaction windows extracted per company'},
+    {n:2,c:'var(--purple)',title:'Feature Extraction (12 features)',desc:'Mean, std, CV, trend, spike days, zero-day ratio, weekend ratio'},
+    {n:3,c:'var(--green)',title:'Isolation Forest (200 trees)',desc:'Anomaly scoring — contamination=5%, StandardScaler normalized'},
+    {n:4,c:'var(--amber)',title:'Rule-Based Alert Layer',desc:'Revenue drop >70%, spike >5×, excessive zero-activity days detected'},
+    {n:5,c:'var(--red)',title:'Risk Classification',desc:'LOW / MEDIUM / HIGH → feeds 25% weight into composite credit score'},
+  ].map(s=>`<div class="pipeline-step">
+    <div class="step-num" style="background:${s.c}20;color:${s.c}">${s.n}</div>
+    <div class="step-content"><div class="step-title">${s.title}</div><div class="step-desc">${s.desc}</div></div>
+  </div>`).join('');
+
+  $('fraudAlerts').innerHTML=[
+    {id:'COMP-0041',level:'HIGH',prob:87.3,reason:'Sudden revenue drop (>70%) in last 7 days',color:'alert-high',tc:'var(--red)'},
+    {id:'COMP-0118',level:'HIGH',prob:79.1,reason:'Suspicious transaction spike + excessive zero-days: 29',color:'alert-high',tc:'var(--red)'},
+    {id:'COMP-0077',level:'MEDIUM',prob:54.1,reason:'Transaction volatility exceeds 2σ threshold',color:'alert-med',tc:'var(--amber)'},
+    {id:'COMP-0033',level:'MEDIUM',prob:41.8,reason:'Revenue trend strongly negative for 30+ days',color:'alert-med',tc:'var(--amber)'},
+    {id:'COMP-0007',level:'LOW',prob:4.2,reason:'No anomalies detected — normal activity pattern',color:'alert-low',tc:'var(--green)'},
+  ].map(a=>`<div class="alert-card ${a.color}" style="display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <div style="font-size:12px;font-weight:600;color:${a.tc};margin-bottom:3px">${a.level} — ${a.id}</div>
+      <div style="font-size:12px;color:var(--text2)">${a.reason}</div>
+    </div>
+    <div style="font-size:20px;font-weight:700;color:${a.tc};margin-left:20px;flex-shrink:0">${a.prob}%</div>
+  </div>`).join('');
+}
+
+async function runFraudSim(){
+  const company=$('fd_company').value||'COMP-0001';
+  const risk=$('fd_risk').value;
+  $('fraudResult').style.display='none';
+  const btn=event.target;btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Simulating…';
+  try{
+    const d=await apiFetch(`/api/fraud/simulate?company_id=${company}&risk_level=${risk}`);
+    const det=d.detection;
+    const lvlColor={'LOW':'var(--green)','MEDIUM':'var(--amber)','HIGH':'var(--red)'}[det.risk_level]||'var(--text2)';
+    $('fraudResult').style.display='block';
+    $('fraudResult').innerHTML=`
+      <div style="background:var(--bg4);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-top:10px">
+        <div style="font-size:14px;font-weight:600;color:${lvlColor};margin-bottom:8px">${det.risk_level} RISK — ${(det.fraud_probability*100).toFixed(1)}%</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Anomaly Score: <span style="color:var(--text1);font-family:var(--mono)">${det.anomaly_score?.toFixed(4)}</span></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Suspicious: <span style="color:${det.is_fraud?'var(--red)':'var(--green)'}">${det.is_fraud?'YES':'NO'}</span></div>
+        ${det.alerts?.length?`<div style="font-size:11px;color:var(--amber)">${det.alerts.map(a=>`⚠ ${a}`).join('<br>')}</div>`:'<div style="font-size:11px;color:var(--green)">✓ No rule-based alerts triggered</div>'}
+        <div style="font-size:11px;color:var(--text3);margin-top:10px">Sample 14-day amounts: ${d.sample_amounts?.slice(0,7).map(v=>`$${v.toLocaleString()}`).join(', ')}</div>
+      </div>`;
+  }catch(e){
+    $('fraudResult').style.display='block';
+    $('fraudResult').innerHTML=`<div style="color:var(--red);font-size:12px;margin-top:10px">API error: ${e.message}</div>`;
+  } finally {btn.disabled=false;btn.textContent='Run Simulation';}
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadDashboard();
+</script>
+</body>
+</html>
