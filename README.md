@@ -4,7 +4,7 @@
 ---
 ## Live Demo
 
-Access the platform here
+[Access the platform here](https://creditai-enterprise-risk-intelligence.onrender.com/)
 
 ## Multi-Agent Architecture
 
