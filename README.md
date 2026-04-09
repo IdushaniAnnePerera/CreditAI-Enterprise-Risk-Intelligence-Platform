@@ -2,18 +2,20 @@
 ### Full-Stack AI Credit Risk System · Dark Mode · Production Ready
 
 ---
-Live Demo
+## Live Demo
 
 Access the platform here
 
-Multi-Agent Architecture
+## Multi-Agent Architecture
 
 CreditAI leverages a multi-agent style design, where specialized AI modules (“agents”) operate independently but collaborate to deliver comprehensive credit risk assessments. Each agent focuses on a distinct domain:
 
-Agent	Role	Output
-Credit ML Agent	Predicts default probability using XGBoost, Random Forest, and Gradient Boosting	Probability score, risk tier
-Fraud Detection Agent	Detects anomalies in transaction histories using Isolation Forest	Fraud risk level
-NLP Sentiment Agent	Analyzes financial news headlines using TF-IDF + Logistic Regression	Market sentiment, impact score
+| Agent                 | Role                                                                             | Output                         |
+| --------------------- | -------------------------------------------------------------------------------- | ------------------------------ |
+| Credit ML Agent       | Predicts default probability using XGBoost, Random Forest, and Gradient Boosting | Probability score, risk tier   |
+| Fraud Detection Agent | Detects anomalies in transaction histories using Isolation Forest                | Fraud risk level               |
+| NLP Sentiment Agent   | Analyzes financial news headlines using TF-IDF + Logistic Regression             | Market sentiment, impact score |
+
 
 How it works:
 
