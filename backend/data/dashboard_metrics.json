@@ -1,0 +1,66 @@
+{
+  "portfolio": {
+    "total_applications": 5000,
+    "approved": 2009,
+    "declined": 2991,
+    "default_rate": 0.5982,
+    "avg_loan": 188638.0,
+    "total_exposure": 943189583.0,
+    "avg_credit_score": 679.5
+  },
+  "risk_tiers": {
+    "A": 1386,
+    "AA": 1143,
+    "BBB": 1034,
+    "BB": 623,
+    "AAA": 559,
+    "B": 255
+  },
+  "industries": {
+    "Healthcare": 547,
+    "Energy": 520,
+    "Agriculture": 514,
+    "Transportation": 506,
+    "Real Estate": 500,
+    "Media": 496,
+    "Retail": 486,
+    "Manufacturing": 481
+  },
+  "model_performance": {
+    "ensemble_auc": 0.782,
+    "xgb_auc": 0.7758,
+    "rf_auc": 0.7767,
+    "gb_auc": 0.7853
+  },
+  "feature_importance": {
+    "late_payments_12m": 0.1407974660396576,
+    "credit_score": 0.10448785871267319,
+    "loan_to_revenue_ratio": 0.06774087995290756,
+    "high_dti_low_credit": 0.0635588988661766,
+    "cash_flow_adequacy": 0.04270290583372116,
+    "debt_service_coverage": 0.04264616593718529,
+    "debt_to_income_ratio": 0.041013453155756,
+    "experience_credit_interaction": 0.037641964852809906,
+    "transaction_volatility": 0.036913517862558365,
+    "volatility_risk": 0.033023301512002945
+  },
+  "monthly_applications": {
+    "01": 458,
+    "02": 415,
+    "03": 397,
+    "04": 400,
+    "05": 448,
+    "06": 442,
+    "07": 393,
+    "08": 438,
+    "09": 421,
+    "10": 418,
+    "11": 398,
+    "12": 372
+  },
+  "risk_distribution": {
+    "low": 652,
+    "medium": 1391,
+    "high": 2957
+  }
+}
