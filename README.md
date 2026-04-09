@@ -2,6 +2,32 @@
 ### Full-Stack AI Credit Risk System · Dark Mode · Production Ready
 
 ---
+Live Demo
+
+Access the platform here
+
+Multi-Agent Architecture
+
+CreditAI leverages a multi-agent style design, where specialized AI modules (“agents”) operate independently but collaborate to deliver comprehensive credit risk assessments. Each agent focuses on a distinct domain:
+
+Agent	Role	Output
+Credit ML Agent	Predicts default probability using XGBoost, Random Forest, and Gradient Boosting	Probability score, risk tier
+Fraud Detection Agent	Detects anomalies in transaction histories using Isolation Forest	Fraud risk level
+NLP Sentiment Agent	Analyzes financial news headlines using TF-IDF + Logistic Regression	Market sentiment, impact score
+
+How it works:
+
+A new credit application or news feed enters the system.
+Each agent processes the input in parallel.
+Outputs are aggregated using weighted scores (Credit ML 55%, Fraud 25%, NLP 20%) to produce a final AI-driven decision.
+The results are displayed on the dashboard and accessible via API endpoints.
+
+Benefits of this design:
+
+Specialization – each agent is optimized for its task.
+Parallelism – fast, simultaneous predictions (~200ms per application).
+Transparency – outputs from each agent are independently monitorable.
+Scalability – new agents (e.g., deep learning modules) can be added seamlessly.
 
 ## What's Inside
 
@@ -251,18 +277,6 @@ def build_deep_credit_model(n_features=23):
 
 docker-compose up -d
 ```
-
-### Docker (optional)
-```dockerfile
-FROM python:3.11-slim
-WORKDIR /app
-COPY backend/ .
-RUN pip install -r requirements.txt
-EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
----
 
 ## Troubleshooting
 
